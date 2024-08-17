@@ -1,59 +1,48 @@
 #!/usr/bin/python3
-"""
-Log parsing
-"""
+"""Log Parser"""
 import sys
+import signal
 
+# Initialize the total file size and status code counts
+file_size = 0
+status_codes = {200: 0, 301: 0, 400: 0, 401: 0,
+                403: 0, 404: 0, 405: 0, 500: 0}
 
-def print_stats(total_size, status_codes):
-    """
-    Print the stats of the log parsing
-    """
-    print("File size: {}".format(total_size))
-    for code in sorted(status_codes.keys()):
+def print_stats():
+    """Print statistics for total file size and status code counts."""
+    print(f"File size: {file_size}")
+    for code in sorted(status_codes):
         if status_codes[code] > 0:
-            print("{}: {}".format(code, status_codes[code]))
-
+            print(f"{code}: {status_codes[code]}")
 
 def parse_line(line):
-    """
-    Parse a line from the log
-    """
+    """Parse a log line and update file size and status code counts."""
+    global file_size
     try:
         parts = line.split()
-        size = int(parts[-1])
-        code = int(parts[-2])
-        return (size, code)
-    except (ValueError, IndexError):
-        return (0, 0)
+        # Update file size
+        file_size += int(parts[-1])
+        # Update status code count if it's valid
+        status_code = int(parts[-2])
+        if status_code in status_codes:
+            status_codes[status_code] += 1
+    except (IndexError, ValueError):
+        # Ignore lines that don't match the expected format
+        pass
 
+def handle_interrupt(signum, frame):
+    """Handle keyboard interrupt (CTRL + C) by printing statistics."""
+    print_stats()
+    sys.exit(0)
 
-def main():
-    """
-    Main function
-    """
-    total_size = 0
-    status_codes = {200: 0, 301: 0, 400: 0, 401: 0,
-                    403: 0, 404: 0, 405: 0, 500: 0}
-    count = 0
+if __name__ == '__main__':
+    signal.signal(signal.SIGINT, handle_interrupt)  # Setup interrupt handler
+    line_count = 0
 
-    try:
-        for line in sys.stdin:
-            size, code = parse_line(line)
-            total_size += size
-            if code in status_codes:
-                status_codes[code] += 1
-            count += 1
+    for line in sys.stdin:
+        parse_line(line)
+        line_count += 1
+        if line_count % 10 == 0:
+            print_stats()
 
-            if count % 10 == 0:
-                print_stats(total_size, status_codes)
-
-    except KeyboardInterrupt:
-        print_stats(total_size, status_codes)
-        raise
-
-    print_stats(total_size, status_codes)
-
-
-if __name__ == "__main__":
-    main()
+    print_stats()  # Print any remaining stats after processing all lines
