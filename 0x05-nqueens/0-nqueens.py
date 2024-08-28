@@ -2,6 +2,7 @@
 """ N QUEENS ALGORITHM WITH BACKTRACKING """
 import sys
 
+
 class NQueen:
     """ Class for solving N Queen Problem """
 
@@ -24,11 +25,13 @@ class NQueen:
             if self.place(k, i):
                 self.x[k] = i
                 if k == self.n:
-                    solution = [[i - 1, self.x[i] - 1] for i in range(1, self.n + 1)]
+                    solution = [[i - 1, self.x[i] - 1] for i
+                                in range(1, self.n + 1)]
                     self.res.append(solution)
                 else:
                     self.nQueen(k + 1)
         return self.res
+
 
 # Main execution
 if len(sys.argv) != 2:
