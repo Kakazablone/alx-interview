@@ -1,31 +1,43 @@
 #!/usr/bin/node
 const argv = process.argv;
-const axios = require('axios');
+const request = require('request');
 
-const urlFilm = 'https://swapi-api.hbtn.io/api/films/';
+const urlFilm = 'https://swapi-api.alx-tools.com/api/films/';
 const urlMovie = `${urlFilm}${argv[2]}/`;
 
-async function fetchCharacter (url) {
-  try {
-    const response = await axios.get(url);
-    console.log(response.data.name);
-  } catch (error) {
-    console.error('Error fetching character:', error);
-  }
+function fetchCharacter (url, callback) {
+  request(url, function (error, response, body) {
+    if (!error && response.statusCode === 200) {
+      const character = JSON.parse(body);
+      console.log(character.name);
+      callback();
+    } else {
+      console.error('Error fetching character:', error);
+    }
+  });
 }
 
-async function fetchMovie () {
-  try {
-    const response = await axios.get(urlMovie);
-    const characters = response.data.characters;
+function fetchMovie () {
+  request(urlMovie, function (error, response, body) {
+    if (!error && response.statusCode === 200) {
+      const movie = JSON.parse(body);
+      const characters = movie.characters;
 
-    // Fetch each character sequentially
-    for (let i = 0; i < characters.length; i++) {
-      await fetchCharacter(characters[i]);
+      let count = 0;
+      function fetchNextCharacter () {
+        if (count < characters.length) {
+          fetchCharacter(characters[count], function () {
+            count++;
+            fetchNextCharacter();
+          });
+        }
+      }
+
+      fetchNextCharacter();
+    } else {
+      console.error('Error fetching movie:', error);
     }
-  } catch (error) {
-    console.error('Error fetching movie:', error);
-  }
+  });
 }
 
 // Start fetching movie data
